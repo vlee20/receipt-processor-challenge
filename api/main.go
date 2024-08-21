@@ -9,7 +9,7 @@ import (
 
 // Handler for the root endpoint
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the Go web API!")
+    fmt.Fprintf(w, "Welcome to the Go web API!!")
 }
 
 // Handler for the /api/greet endpoint
