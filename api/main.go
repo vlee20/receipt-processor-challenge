@@ -11,19 +11,17 @@ import (
 )
 
 // Handler for the root endpoint
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the Go web API!!")
-}
-
-// Handler for the /api/greet endpoint
-func GreetHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
-	fmt.Fprintf(w, "Hello, %s!", name)
-}
 
 func IdGenerator(w http.ResponseWriter, r *http.Request) {
+	// var uppercase_letters string = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+	// var lowercase_letters string = "abcdefghijkmnopqrstuvwxyz"
+	// var digits string = "0123456789"
 	randomInt := rand.Intn(1000)
+	// const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	// b := make([]byte, 16)
+	// for i := range b {
+	//     b[i] = letters[rand.Intn(len(letters))]
+	// }
 	// return map[string]int{"id": randomInt}
 	fmt.Fprintf(w, `{"id:"`+string(randomInt)+`}`)
 }
@@ -36,12 +34,14 @@ type Receipt struct {
 	Total        string `json:"total"`
 }
 
+var global_memory = make(map[string]*Receipt)
+
 func CreateReceipt(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
-	randomInt := rand.Intn(1000)
+	// randomInt := rand.Intn(1000)
 	var receipt Receipt
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&receipt); err != nil {
@@ -50,28 +50,51 @@ func CreateReceipt(w http.ResponseWriter, r *http.Request) {
 	}
 	// Respond with the received data
 	response := fmt.Sprintf("Receipt created: %s", receipt.Retailer)
+	// rand := fmt.Sprintf("%d", randomInt)
+
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 16)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	global_memory[string(b)] = &receipt
+	fmt.Println(global_memory)
+	fmt.Println(global_memory[string(b)])
+	fmt.Println(receipt.Items[0]["price"])
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message":"` + response + `"}`))
-	w.Write([]byte(`{"id":"` + string(randomInt) + `"}`))
+	w.Write([]byte(`{"message":"` + response + `"}, {"id":"` + string(b) + `"}`))
+}
+
+func GetPoints(w http.ResponseWriter, r *http.Request) {
+	// if r.Method != http.MethodGet {
+	// 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	// 	return
+	// }
+	vars := mux.Vars(r)
+	id := vars["id"]
+	// id := r.URL.Query().Get("id")
+	fmt.Println(id)
+	w.Write([]byte(`{"id":"` + id + `"}`))
 }
 
 func main() {
-	// r := mux.NewRouter()
+	r := mux.NewRouter()
 
 	// Define routes
-	// r.HandleFunc("/", HomeHandler).Methods("GET")
-	// r.HandleFunc("/api/greet/{name:[a-zA-Z0-9]+}", GreetHandler).Methods("GET")
 
 	// r.HandleFunc("/receipts/process", IdGenerator).Methods("POST")
 
-	http.HandleFunc("/receipts/process", CreateReceipt)
+	r.HandleFunc("/receipts/process", CreateReceipt).Methods("POST")
 
-	fmt.Println("Server is listening on port 8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Println("Server failed to start:", err)
-	}
+	r.HandleFunc("/receipts/{id}/points", GetPoints).Methods("GET")
+
+	// fmt.Println("Server is listening on port 8080")
+	// if err := http.ListenAndServe(":8080", nil); err != nil {
+	// 	fmt.Println("Server failed to start:", err)
+	// }
 	// Start the server
-	// fmt.Println("Starting server on :8080")
-	// http.ListenAndServe(":8080", r)
+	fmt.Println("Starting server on :8080")
+	http.ListenAndServe(":8080", r)
 }
