@@ -72,11 +72,18 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 	// 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	// 	return
 	// }
+	var points int = 0
+	var res = make(map[string]int)
 	vars := mux.Vars(r)
 	id := vars["id"]
-	// id := r.URL.Query().Get("id")
+	if global_memory[id] != nil {
+		fmt.Println(global_memory[id])
+		res["points"] = points
+		json.NewEncoder(w).Encode(res)
+	} else {
+		http.Error(w, "Item not found", http.StatusNotFound)
+	}
 	fmt.Println(id)
-	w.Write([]byte(`{"id":"` + id + `"}`))
 }
 
 func main() {
