@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -96,6 +97,25 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 			if len(trim_desc)%3 == 0 {
 				points = points + int(math.Ceil(conv_price*0.2))
 			}
+		}
+		// 6 points if the day in the purchase date is odd
+		date_layout := "2006-01-02"
+		parsedDate, err := time.Parse(date_layout, global_memory[id].PurchaseDate)
+		if err != nil {
+			fmt.Println("Error parsing date:", err)
+			return
+		}
+		day := parsedDate.Day()
+		if day%2 == 1 {
+			points = points + 6
+		}
+		// 10 points if the time of purchase is after 2:00pm and before 4:00pm
+		purchase_time := global_memory[id].PurchaseTime
+		time_layout := "15:04"
+		parsedTime, err := time.Parse(time_layout, purchase_time)
+		hour := parsedTime.Hour()
+		if hour > 14 && hour < 16 {
+			points = points + 10
 		}
 		res["points"] = points
 		json.NewEncoder(w).Encode(res)
