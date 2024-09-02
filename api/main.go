@@ -4,27 +4,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
 // Handler for the root endpoint
-
-func IdGenerator(w http.ResponseWriter, r *http.Request) {
-	// var uppercase_letters string = "ABCDEFGHJKLMNPQRSTUVWXYZ"
-	// var lowercase_letters string = "abcdefghijkmnopqrstuvwxyz"
-	// var digits string = "0123456789"
-	randomInt := rand.Intn(1000)
-	// const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	// b := make([]byte, 16)
-	// for i := range b {
-	//     b[i] = letters[rand.Intn(len(letters))]
-	// }
-	// return map[string]int{"id": randomInt}
-	fmt.Fprintf(w, `{"id:"`+string(randomInt)+`}`)
-}
 
 type Receipt struct {
 	Retailer     string `json:"retailer"`
@@ -67,6 +56,10 @@ func CreateReceipt(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message":"` + response + `"}, {"id":"` + string(b) + `"}`))
 }
 
+func isIntegral(val float64) bool {
+	return val == float64(int(val))
+}
+
 func GetPoints(w http.ResponseWriter, r *http.Request) {
 	// if r.Method != http.MethodGet {
 	// 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -78,6 +71,32 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	if global_memory[id] != nil {
 		fmt.Println(global_memory[id])
+		// One point for every alphanumeric character in the retailer name
+		points = points + len(global_memory[id].Retailer)
+		// 50 points if the total is a round dollar amount with no cents.
+		t2, _ := strconv.ParseFloat(global_memory[id].Total, 8)
+		if isIntegral(t2) {
+			points = points + 50
+		}
+		// 25 points if the total is a multiple of 0.25
+		if math.Mod(t2, 0.25) == 0 {
+			points = points + 25
+		}
+		// 5 points for every two items on the receipt
+		var item_size = len(global_memory[id].Items)
+		points = points + int(item_size/2)
+		// If the trimmed length of the item description is a multiple of 3, multiply the price by 0.2 and round up to the nearest integer. The result is the number of points earned.
+		l := len(global_memory[id].Items)
+		item := global_memory[id].Items
+		for i := 0; i < l; i++ {
+			price := item[i]["price"]
+			conv_price, _ := strconv.ParseFloat(price, 8)
+			trim_desc := strings.TrimSpace(item[i]["shortDescription"])
+			fmt.Println(trim_desc)
+			if len(trim_desc)%3 == 0 {
+				points = points + int(math.Ceil(conv_price*0.2))
+			}
+		}
 		res["points"] = points
 		json.NewEncoder(w).Encode(res)
 	} else {
