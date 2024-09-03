@@ -11,7 +11,7 @@ Data does not need to persist when your application stops. It is sufficient to s
 ## Instructions
 
 Start the server by running the following command.  
-Make sure you are in the directory of the file.  
+Go to the `api` folder directory and run the command below.  
 `go run main.go`
 
 ## Language Selection
