@@ -6,6 +6,8 @@ Start the server by running the following command.
 Go to the `api` folder directory and run the command below on your localhost.  
 `go run main.go`
 
+##
+
 Build a webservice that fulfils the documented API. The API is described below. A formal definition is provided
 in the [api.yml](./api.yml) file, but the information in this README is sufficient for completion of this challenge. We will use the
 described API to test your solution.
