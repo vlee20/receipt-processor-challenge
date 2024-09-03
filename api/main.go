@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/mux"
 )
@@ -73,7 +74,13 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 	if global_memory[id] != nil {
 		fmt.Println(global_memory[id])
 		// One point for every alphanumeric character in the retailer name
-		points = points + len(global_memory[id].Retailer)
+		retailer := global_memory[id].Retailer
+		for _, char := range retailer {
+			if unicode.IsLetter(char) || unicode.IsDigit(char) {
+				fmt.Println(points)
+				points = points + 1
+			}
+		}
 		// 50 points if the total is a round dollar amount with no cents.
 		t2, _ := strconv.ParseFloat(global_memory[id].Total, 8)
 		if isIntegral(t2) {
@@ -85,7 +92,7 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 		}
 		// 5 points for every two items on the receipt
 		var item_size = len(global_memory[id].Items)
-		points = points + int(item_size/2)
+		points = points + (int(item_size/2) * 5)
 		// If the trimmed length of the item description is a multiple of 3, multiply the price by 0.2 and round up to the nearest integer. The result is the number of points earned.
 		l := len(global_memory[id].Items)
 		item := global_memory[id].Items
@@ -100,9 +107,9 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 		}
 		// 6 points if the day in the purchase date is odd
 		date_layout := "2006-01-02"
-		parsedDate, err := time.Parse(date_layout, global_memory[id].PurchaseDate)
-		if err != nil {
-			fmt.Println("Error parsing date:", err)
+		parsedDate, errDate := time.Parse(date_layout, global_memory[id].PurchaseDate)
+		if errDate != nil {
+			fmt.Println("Error parsing date:", errDate)
 			return
 		}
 		day := parsedDate.Day()
@@ -112,10 +119,15 @@ func GetPoints(w http.ResponseWriter, r *http.Request) {
 		// 10 points if the time of purchase is after 2:00pm and before 4:00pm
 		purchase_time := global_memory[id].PurchaseTime
 		time_layout := "15:04"
-		parsedTime, err := time.Parse(time_layout, purchase_time)
+		parsedTime, errTime := time.Parse(time_layout, purchase_time)
+		if errTime != nil {
+			fmt.Println("Error parsing date:", errTime)
+			return
+		}
 		hour := parsedTime.Hour()
-		if hour > 14 && hour < 16 {
+		if hour >= 14 && hour <= 16 {
 			points = points + 10
+			fmt.Println(points)
 		}
 		res["points"] = points
 		json.NewEncoder(w).Encode(res)
